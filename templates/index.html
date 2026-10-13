@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heart disease risk check</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <h1>Heart disease risk check</h1>
+    <p>Enter a patient's clinical measurements. A logistic regression model trained on 303 records estimates how likely heart disease is.</p>
+  </header>
+
+  <main class="layout">
+    <form id="form" class="panel" novalidate>
+      <div class="form-head">
+        <h2>Patient details</h2>
+        <button type="button" id="example" class="link">Fill with example</button>
+      </div>
+      <div class="grid">
+        {% for f in fields %}
+        <div class="field" data-name="{{ f.name }}">
+          <label for="{{ f.name }}">{{ f.label }}{% if f.unit %} <span class="unit">({{ f.unit }})</span>{% endif %}</label>
+          {% if f.type == 'select' %}
+          <select id="{{ f.name }}" name="{{ f.name }}" data-example="{{ f.example }}" required>
+            <option value="" disabled selected>Choose…</option>
+            {% for value, text in f.options %}<option value="{{ value }}">{{ text }}</option>{% endfor %}
+          </select>
+          {% else %}
+          <input id="{{ f.name }}" name="{{ f.name }}" type="number" inputmode="decimal"
+                 min="{{ f.min }}" max="{{ f.max }}" step="{{ f.step }}" data-example="{{ f.example }}" required>
+          {% endif %}
+          <p class="error" role="alert"></p>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="actions">
+        <button type="submit" id="submit" class="primary">Check risk</button>
+        <button type="reset" id="reset" class="secondary">Clear</button>
+      </div>
+    </form>
+
+    <aside class="side">
+      <section id="result" class="panel result idle" aria-live="polite">
+        <svg class="trace" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+          <path id="trace" d="M0 50 H110 L125 50 L135 38 L145 50 H175 L185 56 L200 8 L215 84 L228 50 H262 L278 36 L296 50 H400"/>
+        </svg>
+        <div class="result-body">
+          <p id="result-label" class="result-label">Result</p>
+          <p id="result-value" class="result-value">—</p>
+          <p id="result-text" class="result-text">Fill in the form and choose “Check risk”.</p>
+          <div class="meter" aria-hidden="true"><span id="meter-fill"></span></div>
+        </div>
+      </section>
+
+      <section class="panel model">
+        <h2>About the model</h2>
+        <dl>
+          <div><dt>Accuracy on held-out test set</dt><dd>{{ '%.1f' % (metrics.accuracy * 100) }}%</dd></div>
+          <div><dt>Precision / recall / F1</dt><dd>{{ '%.2f' % metrics.precision }} / {{ '%.2f' % metrics.recall }} / {{ '%.2f' % metrics.f1 }}</dd></div>
+          <div><dt>Train / test rows</dt><dd>{{ metrics.train_rows }} / {{ metrics.test_rows }}</dd></div>
+        </dl>
+        {% set cm = metrics.confusion_matrix %}
+        <table class="cm">
+          <caption>Confusion matrix (test set)</caption>
+          <thead><tr><th></th><th scope="col">Predicted no disease</th><th scope="col">Predicted disease</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Actually no disease</th><td>{{ cm[0][0] }}</td><td class="miss">{{ cm[0][1] }}</td></tr>
+            <tr><th scope="row">Actually disease</th><td class="miss">{{ cm[1][0] }}</td><td>{{ cm[1][1] }}</td></tr>
+          </tbody>
+        </table>
+        <p class="note">This is a learning project, not a diagnostic tool. Results do not replace advice from a doctor.</p>
+      </section>
+    </aside>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
